@@ -15,3 +15,11 @@ def cwd(currentPath: list[str], newPath: str) -> tuple[list[str], bool]:
 
 def pwd(path: list[str]) -> str:
     return "/".join(path)
+
+
+def retr(path: list[str], file_name: str) -> (str | None):
+    file_path = os.path.join(os.curdir, "/".join(path), file_name)
+    if os.path.exists(file_path):
+        return open(file_path, "r").read()
+    return None
+    

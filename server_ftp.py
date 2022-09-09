@@ -71,28 +71,28 @@ class ServerFTP:
             data = client.recv(2048).decode()
             response = CodeFTP.OK
 
-            # if not user.isAuthenticated:
-            #     response = self.handle_unauthenticated_client(data, user)
+            if not user.isAuthenticated:
+                response = self.handle_unauthenticated_client(data, user)
 
-            # else:
-            response = self.handle_authenticated_client(data, user)
+            else:
+                response = self.handle_authenticated_client(data, user)
 
             client.send(str(response).encode("utf-8"))
 
     def handle_unauthenticated_client(
         self, raw_data: str, user: User
     ) -> CodeFTP:
-        data = raw_data.split(" ")
+        cmd, data = raw_data.split(" ")
 
-        if data.startswith(CMD.USER.value) or data.startswith(CMD.PASS.value):
+        if cmd.startswith(CMD.USER.value) or cmd.startswith(CMD.PASS.value):
             if len(data) < 2:
                 return CodeFTP.SYNTAX_ERROR
 
-            if data.startswith(CMD.USER.value):
-                user.username = data[1]
+            if cmd.startswith(CMD.USER.value):
+                user.username = data
 
-            elif data.startswith(CMD.PASS.value):
-                user.password = data[1]
+            elif cmd.startswith(CMD.PASS.value):
+                user.password = data
 
             login_state = self.login(user)
 
@@ -144,6 +144,14 @@ class ServerFTP:
             response.message = file_utils.pwd(self.currentDir)
 
         elif data.startswith(CMD.RETR.value):
-            pass
+            if len(data.split(" ")) < 2:
+                return CodeFTP.SYNTAX_ERROR
+            file_name = data.split(" ")[1]
+            file_content = file_utils.retr(self.currentDir, file_name)
+            if file_content is None:
+                response = CodeFTP.FILE_NOT_AVAILABLE
+            else:
+                response = CodeFTP.OK
+                response.message = file_content
 
         return response
