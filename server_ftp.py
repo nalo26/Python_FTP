@@ -6,6 +6,7 @@ from server_tcp import ServerTCP
 from enums import CommandTCP
 from enums import CodeFTP
 import file_utils
+from ipaddress import ip_address
 
 
 class User:
@@ -139,7 +140,24 @@ class ServerFTP:
             pass
 
         elif data.startswith(CommandTCP.PORT.value):
-            pass
+            args = data.split(" ")[:1]
+
+            if len(args) != 6:
+                return CodeFTP.SYNTAX_ERROR
+
+            e = args[4]
+            f = args[5]
+            if not isinstance(e, int) or not isinstance(f, int):
+                return CodeFTP.SYNTAX_ERROR
+            port = e * f
+            if not (1023 < port < 65536):
+                return CodeFTP.SYNTAX_ERROR
+
+            a = args[0]
+            b = args[1]
+            c = args[2]
+            d = args[3]
+            ip = ip_address(ip_bytes)
 
         elif data.startswith(CommandTCP.PWD.value):
             response = CodeFTP.OK
