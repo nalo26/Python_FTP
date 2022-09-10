@@ -6,6 +6,7 @@ from server_tcp import ServerTCP
 from enums import CommandTCP
 from enums import CodeFTP
 import file_utils
+from parser_utils import get_command_and_args
 from ip_utils import parse_ip
 
 
@@ -13,7 +14,7 @@ class User:
     def __init__(self, username: str = None, password: str = None) -> None:
         self.username = username
         self.password = password
-        self.isAuthenticated = False
+        self.is_authenticated = False
 
     def __eq__(self, other: object) -> bool:
         return (
@@ -63,7 +64,7 @@ class ServerFTP:
 
     def login(self, user: User) -> LoginState:
         if user in self.users:
-            user.isAuthenticated = True
+            user.is_authenticated = True
             return self.LoginState.ACCEPTED
 
         if user.username == "anonymous":
@@ -93,24 +94,18 @@ class ServerFTP:
             data = client_socket.recv(2048).decode()
             if data == "":
                 continue
-
-            if user.isAuthenticated:
-                response = self.handle_authenticated_client(data, user, client_address)
-
-            else:
-                response = self.handle_unauthenticated_client(data, user)
-
+            cmd, args = get_command_and_args(data)
+            response = self.handle_client_commands(cmd, args, user, client_address)
             client_socket.send(str(response).encode("utf-8"))
 
-    @staticmethod
-    def get_command_and_args(raw_data: str) -> (str, list[str]):
-        data = list(filter(None, raw_data.split(" ")))
-        cmd = data[0]
-        args = data[1:] if len(data) > 1 else []
-        return cmd, args
+    def handle_client_commands(self, cmd: str, args: list[str], user: User, client_address) -> CodeFTP:
+        if cmd not in [tcp_c.cmd for tcp_c in CommandTCP]:
+            return CodeFTP.COMMAND_NOT_IMPL
 
-    def handle_unauthenticated_client(self, raw_data: str, user: User) -> CodeFTP:
-        cmd, args = self.get_command_and_args(raw_data)
+        if cmd == CommandTCP.HELP.cmd:
+            response = CodeFTP.OK
+            response.message += "\n"
+            response.message += "\n".join([tcp_c.help() for tcp_c in CommandTCP])
 
         if cmd == CommandTCP.USER.cmd or cmd == CommandTCP.PASS.cmd:
             if len(args) != 1:
@@ -132,14 +127,8 @@ class ServerFTP:
 
             return CodeFTP.USERNAME_OK_NEED_PWD
 
-        return CodeFTP.COMMAND_NOT_IMPL
-
-    def handle_authenticated_client(
-            self, raw_data: str, user: User, client_address
-    ) -> CodeFTP:
-        data = list(filter(None, raw_data.split(" ")))
-        cmd = data[0]
-        args = data[1:] if len(data) > 1 else []
+        if not user.is_authenticated:
+            return CodeFTP.COMMAND_NOT_IMPL
 
         if cmd == CommandTCP.CWD.cmd:
             if len(args) != 1:
