@@ -6,7 +6,6 @@ from server_tcp import ServerTCP
 from enums import CommandTCP
 from enums import CodeFTP
 import file_utils
-from ipaddress import ip_address
 from ip_utils import parse_ip
 
 
@@ -31,7 +30,7 @@ class FileChannel:
     def __init__(
         self,
         client_ip: str,
-        file_sender: (ClientTCP | ServerTCP),
+        file_sender: (ClientTCP or ServerTCP),
         client_socket: socket = None,
     ):
         self.client_ip = client_ip

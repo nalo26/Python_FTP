@@ -14,5 +14,5 @@ class ServerTCP:
     def accept(self) -> tuple:
         return self.socket.accept()
 
-    def close(self):
+    def close(self) -> None:
         self.socket.close()

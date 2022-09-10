@@ -6,11 +6,12 @@ from threading import Thread
 from socket import socket
 import re
 
-class ClientFTP():
+
+class ClientFTP:
     def __init__(self, root: str) -> None:
         self.client_tcp_control = ClientTCP()
-        self.client_tcp_data: ClientTCP = None
-        self.serverTCP: ServerTCP = None
+        self.client_tcp_data: ClientTCP or None = None
+        self.serverTCP: ServerTCP or None = None
         self.root_dir = root
         self.file_name = None
         self.buffer_size = 2048
@@ -55,7 +56,7 @@ class ClientFTP():
         while True:
             self.receive_file(own_ftp_server_socket)
 
-    def receive_file(self, ftp_socket: socket) -> bytes:
+    def receive_file(self, ftp_socket: socket) -> None:
         if self.file_name is None:
             filename = ftp_socket.recv(2048)
             self.file_name = filename.decode("utf-8")

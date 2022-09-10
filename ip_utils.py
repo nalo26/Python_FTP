@@ -10,7 +10,7 @@ def parse_ip(values: str) -> tuple[str, int]:
     e, f = args[4:6]
 
     if not e.isdigit() or not f.isdigit():
-        return ValueError()
+        raise ValueError()
 
     port = 256 * int(e) + int(f)
 
