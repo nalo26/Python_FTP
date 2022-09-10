@@ -36,6 +36,7 @@ class CodeFTP(Enum):
     WRONG_USERNAME_OR_PWD = (430, "Wrong username or password")
     SYNTAX_ERROR = (501, "Syntax error in parameters or arguments")
     COMMAND_NOT_IMPL = (502, "Command not implemented")
+    REQUEST_DENIED = (534, "Request denied")
     FILE_NOT_AVAILABLE = (550, "File or directory not available")
 
     def __init__(self, code: int, message: str) -> None:
