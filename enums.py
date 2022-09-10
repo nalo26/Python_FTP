@@ -4,8 +4,10 @@ from enum import Enum
 # https://en.wikipedia.org/wiki/List_of_FTP_server_return_codes
 class CodeFTP(Enum):
     OK = (200, "OK")
+    ENTERING_PSV_MODE = (227, "Entering passive mode")
     LOGGED_IN = (230, "User logged in")
     USERNAME_OK_NEED_PWD = (331, "Username OK, need password")
+    NO_DATA_CONNECTION = (425, "Cannot open data connection")
     WRONG_USERNAME_OR_PWD = (430, "Wrong username or password")
     SYNTAX_ERROR = (501, "Syntax error in parameters or arguments")
     COMMAND_NOT_IMPL = (502, "Command not implemented")
@@ -22,7 +24,7 @@ class CodeFTP(Enum):
 class CommandTCP(Enum):
     USER = "USER"
     PASS = "PASS"
-    LIST = "DIR"
+    LIST = "LIST"
     CWD = "CWD"
     RETR = "RETR"
     PASV = "PASV"

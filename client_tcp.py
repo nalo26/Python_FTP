@@ -12,8 +12,8 @@ class ClientTCP:
     def close(self) -> None:
         self.socket.close()
 
-    def send(self, message: str) -> int:
-        return self.socket.send(message.encode("utf-8"))
+    def send(self, message: bytes) -> int:
+        return self.socket.send(message)
 
     def receive(self) -> bytes:
         data = bytes()

@@ -17,9 +17,9 @@ def pwd(path: list[str]) -> str:
     return "/".join(path)
 
 
-def retr(path: list[str], file_name: str) -> (str | None):
+def retr(path: list[str], file_name: str) -> (bytes | None):
     file_path = os.path.join(os.curdir, "/".join(path), file_name)
     if os.path.exists(file_path):
-        return open(file_path, "r").read()
+        return open(file_path, "rb").read()
     return None
     
