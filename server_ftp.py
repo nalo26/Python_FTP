@@ -72,9 +72,9 @@ class ServerFTP:
             return self.LoginState.ACCEPTED
 
         if user.username in [u.username for u in self.users]:
-            if user.password not in (None, ""):
-                return self.LoginState.WRONG_CREDENTIAL
-            return self.LoginState.WAITING_FOR_PWD
+            if user.password in (None, ""):
+                return self.LoginState.WAITING_FOR_PWD
+            return self.LoginState.WRONG_CREDENTIAL
 
         return self.LoginState.WRONG_CREDENTIAL
 
@@ -102,17 +102,19 @@ class ServerFTP:
             client_socket.send(str(response).encode("utf-8"))
 
     def handle_unauthenticated_client(self, raw_data: str, user: User) -> CodeFTP:
-        cmd, data = raw_data.split(" ")
+        data = raw_data.split(" ")
+        cmd = data[0]
+        args = data[1:] if len(data) > 1 else []
 
-        if cmd.startswith(CommandTCP.USER.cmd) or cmd.startswith(CommandTCP.PASS.cmd):
-            if len(data) < 2:
+        if cmd == CommandTCP.USER.cmd or cmd == CommandTCP.PASS.cmd:
+            if len(args) != 1:
                 return CodeFTP.SYNTAX_ERROR
 
-            if cmd.startswith(CommandTCP.USER.cmd):
-                user.username = data
+            if cmd == CommandTCP.USER.cmd:
+                user.username = args[0]
 
             elif cmd.startswith(CommandTCP.PASS.cmd):
-                user.password = data
+                user.password = args[0]
 
             login_state = self.login(user)
 
