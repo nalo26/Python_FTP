@@ -3,7 +3,7 @@ from socket import socket
 from enum import Enum
 
 from server_tcp import ServerTCP
-from enums import CommandTCP as CMD
+from enums import CommandTCP
 from enums import CodeFTP
 import file_utils
 
@@ -31,11 +31,11 @@ class ServerFTP:
         WAITING_FOR_PWD = 1
         WRONG_CREDENTIAL = 2
 
-    def __init__(self, address: str, port: int, rootDir: str) -> None:
+    def __init__(self, address: str, port: int, root_dir: str) -> None:
         self.serverTCP = ServerTCP(address, port)
         self.address = address
         self.port = port
-        self.currentDir = rootDir.split("/")
+        self.currentDir = root_dir.split("/")
         self.users = []
 
     def add_user(self, user: User) -> None:
@@ -58,40 +58,42 @@ class ServerFTP:
 
     def listen_for_new_connections(self) -> None:
         while True:
-            socket, address = self.serverTCP.accept()
+            client_socket, client_address = self.serverTCP.accept()
             thread = threading.Thread(
-                target=self.handle_client, args=(socket, address)
+                target=self.handle_client,
+                args=(client_socket, client_address)
             )
             thread.start()
 
-    def handle_client(self, client: socket, address: str) -> None:
+    def handle_client(self, client_socket: socket, client_address: str) -> None:
         user = User()
 
         while True:
-            data = client.recv(2048).decode()
-            response = CodeFTP.OK
+            data = client_socket.recv(2048).decode()
 
-            if not user.isAuthenticated:
-                response = self.handle_unauthenticated_client(data, user)
-
-            else:
+            if user.isAuthenticated:
                 response = self.handle_authenticated_client(data, user)
 
-            client.send(str(response).encode("utf-8"))
+            else:
+                response = self.handle_unauthenticated_client(data, user)
+
+            client_socket.send(str(response).encode("utf-8"))
 
     def handle_unauthenticated_client(
-        self, raw_data: str, user: User
+        self,
+        raw_data: str,
+        user: User
     ) -> CodeFTP:
         cmd, data = raw_data.split(" ")
 
-        if cmd.startswith(CMD.USER.value) or cmd.startswith(CMD.PASS.value):
+        if cmd.startswith(CommandTCP.USER.value) or cmd.startswith(CommandTCP.PASS.value):
             if len(data) < 2:
                 return CodeFTP.SYNTAX_ERROR
 
-            if cmd.startswith(CMD.USER.value):
+            if cmd.startswith(CommandTCP.USER.value):
                 user.username = data
 
-            elif cmd.startswith(CMD.PASS.value):
+            elif cmd.startswith(CommandTCP.PASS.value):
                 user.password = data
 
             login_state = self.login(user)
@@ -109,7 +111,7 @@ class ServerFTP:
     def handle_authenticated_client(self, data: str, user: User):
         response = CodeFTP.COMMAND_NOT_IMPL
 
-        if data.startswith(CMD.CWD.value):
+        if data.startswith(CommandTCP.CWD.value):
             if len(data.split(" ")) < 2:
                 return CodeFTP.SYNTAX_ERROR
 
@@ -129,21 +131,21 @@ class ServerFTP:
             else:
                 response = CodeFTP.FILE_NOT_AVAILABLE
 
-        elif data.startswith(CMD.LIST.value):
+        elif data.startswith(CommandTCP.LIST.value):
             response = CodeFTP.OK
             response.message = " ".join(file_utils.dir(self.currentDir))
 
-        elif data.startswith(CMD.PASV.value):
+        elif data.startswith(CommandTCP.PASV.value):
             pass
 
-        elif data.startswith(CMD.PORT.value):
+        elif data.startswith(CommandTCP.PORT.value):
             pass
 
-        elif data.startswith(CMD.PWD.value):
+        elif data.startswith(CommandTCP.PWD.value):
             response = CodeFTP.OK
             response.message = file_utils.pwd(self.currentDir)
 
-        elif data.startswith(CMD.RETR.value):
+        elif data.startswith(CommandTCP.RETR.value):
             if len(data.split(" ")) < 2:
                 return CodeFTP.SYNTAX_ERROR
             file_name = data.split(" ")[1]
