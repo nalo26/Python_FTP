@@ -106,6 +106,7 @@ class ServerFTP:
             response = CodeFTP.OK
             response.message += "\n"
             response.message += "\n".join([tcp_c.help() for tcp_c in CommandTCP])
+            return response
 
         if cmd == CommandTCP.USER.cmd or cmd == CommandTCP.PASS.cmd:
             if len(args) != 1:

@@ -34,12 +34,12 @@ class ClientFTP:
 
             if cmd == CommandTCP.PORT.cmd:
                 try:
-                    ip, port = parse_ip(cmd.split(" ")[1])
+                    ip, port = parse_ip(user_input.split(" ")[1])
                     Thread(target=self.create_active_channel, args=(ip, port)).start()
                 except ValueError as error:
                     print(str(error))
                 
-            self.client_tcp_control.send(cmd.encode("utf-8"))
+            self.client_tcp_control.send(user_input.encode("utf-8"))
             data = self.client_tcp_control.receive().decode()
             
             if cmd == CommandTCP.PASV.cmd and data.startswith(str(CodeFTP.ENTERING_PSV_MODE.code)):
