@@ -24,7 +24,7 @@ class CodeFTP(Enum):
 class CommandTCP(Enum):
     CWD = ("CWD", "Change working directory", "directory")
     LIST = ("LIST", "Returns information of a file or directory if specified, "
-                    "else information of the current working directory is returned")
+                    "else information of the current working directory is returned", None)
     PASS = ("PASS", "Authentication password", "password")
     PASV = ("PASV", "Enter passive mode", None)
     PORT = ("PORT", "Specifies an address and port to which the server should connect", "a,b,c,d,e,f")
