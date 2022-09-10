@@ -66,13 +66,15 @@ class ServerFTP:
             user.isAuthenticated = True
             return self.LoginState.ACCEPTED
 
-        if user.username in [u.username for u in self.users]:
-            return self.LoginState.WAITING_FOR_PWD
-
         if user.username == "anonymous":
             if user.password in (None, ""):
                 return self.LoginState.WAITING_FOR_PWD
             return self.LoginState.ACCEPTED
+
+        if user.username in [u.username for u in self.users]:
+            if user.password not in (None, ""):
+                return self.LoginState.WRONG_CREDENTIAL
+            return self.LoginState.WAITING_FOR_PWD
 
         return self.LoginState.WRONG_CREDENTIAL
 
