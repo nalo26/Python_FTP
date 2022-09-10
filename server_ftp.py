@@ -102,10 +102,15 @@ class ServerFTP:
 
             client_socket.send(str(response).encode("utf-8"))
 
-    def handle_unauthenticated_client(self, raw_data: str, user: User) -> CodeFTP:
-        data = raw_data.split(" ")
+    @staticmethod
+    def get_command_and_args(raw_data: str) -> (str, list[str]):
+        data = list(filter(None, raw_data.split(" ")))
         cmd = data[0]
         args = data[1:] if len(data) > 1 else []
+        return cmd, args
+
+    def handle_unauthenticated_client(self, raw_data: str, user: User) -> CodeFTP:
+        cmd, args = self.get_command_and_args(raw_data)
 
         if cmd == CommandTCP.USER.cmd or cmd == CommandTCP.PASS.cmd:
             if len(args) != 1:
@@ -130,13 +135,17 @@ class ServerFTP:
         return CodeFTP.COMMAND_NOT_IMPL
 
     def handle_authenticated_client(
-            self, data: str, user: User, client_address
+            self, raw_data: str, user: User, client_address
     ) -> CodeFTP:
-        if data.startswith(CommandTCP.CWD.cmd):
-            if len(data.split(" ")) < 2:
+        data = list(filter(None, raw_data.split(" ")))
+        cmd = data[0]
+        args = data[1:] if len(data) > 1 else []
+
+        if cmd == CommandTCP.CWD.cmd:
+            if len(args) != 1:
                 return CodeFTP.SYNTAX_ERROR
 
-            path = data.split(" ")[1]
+            path = args[0]
             if "/" in path:
                 return CodeFTP.SYNTAX_ERROR
 
@@ -154,15 +163,16 @@ class ServerFTP:
 
             return response
 
-        elif data.startswith(CommandTCP.LIST.cmd):
+        elif cmd == CommandTCP.LIST.cmd:
             response = CodeFTP.OK
             response.message = " ".join(file_utils.dir(self.currentDir))
             return response
 
-        elif data.startswith(CommandTCP.PASV.cmd):
+        elif cmd == CommandTCP.PASV.cmd:
             file_sender = ServerTCP(self.address, None)
             Thread(
-                target=self.accept_client, args=(file_sender,)
+                target=self.accept_client,
+                args=(file_sender,)
             ).start()
 
             port = file_sender.socket.getsockname()[1]
@@ -174,8 +184,8 @@ class ServerFTP:
             response.message += f" ({self.address.replace('.', ',')},{e},{f})"
             return response
 
-        elif data.startswith(CommandTCP.PORT.cmd):
-            args = data.split(" ")[1]
+        elif cmd == CommandTCP.PORT.cmd:
+            args = args[0]
 
             try:
                 ip, port = parse_ip(args)
@@ -191,20 +201,20 @@ class ServerFTP:
 
             return CodeFTP.OK
 
-        elif data.startswith(CommandTCP.PWD.cmd):
+        elif cmd == CommandTCP.PWD.cmd:
             response = CodeFTP.OK
             response.message = file_utils.pwd(self.currentDir)
             return response
 
-        elif data.startswith(CommandTCP.RETR.cmd):
-            if len(data.split(" ")) < 2:
+        elif cmd == CommandTCP.RETR.cmd:
+            if len(args) != 1:
                 return CodeFTP.SYNTAX_ERROR
             try:
                 file_sender = [c for c in self.clients if c.client_ip == client_address[0]][0]
             except IndexError:  # client not in list
                 return CodeFTP.NO_DATA_CONNECTION
 
-            file_name = data.split(" ")[1]
+            file_name = args[0]
             file_content = file_utils.retr(self.currentDir, file_name)
 
             if file_content is None:
