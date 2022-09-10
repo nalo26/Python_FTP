@@ -26,14 +26,14 @@ class ClientFTP:
             if cmd.upper() == "QUIT":
                 break
 
-            if cmd.startswith(CommandTCP.PORT.value):
+            if cmd.startswith(CommandTCP.PORT.cmd):
                 ip, port = parse_ip(cmd.split(" ")[1])
                 Thread(target=self.create_active_channel, args=(ip, port)).start()
                 
             self.client_tcp_control.send(cmd.encode("utf-8"))
             data = self.client_tcp_control.receive().decode()
             
-            if cmd.startswith(CommandTCP.PASV.value) and data.startswith(str(CodeFTP.ENTERING_PSV_MODE.code)):
+            if cmd.startswith(CommandTCP.PASV.cmd) and data.startswith(str(CodeFTP.ENTERING_PSV_MODE.code)):
                 match = re.search(r"\((\d+,\d+,\d+,\d+,\d+,\d+)\)", data)
                 if match is not None:
                     ip, port = parse_ip(match.group(1))

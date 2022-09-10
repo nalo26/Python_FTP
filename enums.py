@@ -22,11 +22,20 @@ class CodeFTP(Enum):
 
 
 class CommandTCP(Enum):
-    USER = "USER"
-    PASS = "PASS"
-    LIST = "LIST"
-    CWD = "CWD"
-    RETR = "RETR"
-    PASV = "PASV"
-    PORT = "PORT"
-    PWD = "PWD"
+    CWD = ("CWD", "Change working directory", "directory")
+    LIST = ("LIST", "Returns information of a file or directory if specified, "
+                    "else information of the current working directory is returned")
+    PASS = ("PASS", "Authentication password", "password")
+    PASV = ("PASV", "Enter passive mode", None)
+    PORT = ("PORT", "Specifies an address and port to which the server should connect", "a,b,c,d,e,f")
+    PWD = ("PWD", "Print working directory. Returns the current directory of the host", None)
+    RETR = ("RETR", "Retrieve a copy of the file", "file")
+    USER = ("USER", "Authentication username", "username")
+
+    def __init__(self, command_string: str, description: str, arg: str or None) -> None:
+        self.cmd = command_string
+        self.description = description
+        self.arg = arg
+
+    def help(self):
+        return f"{self.cmd} <{self.arg}> ###{self.description}"
