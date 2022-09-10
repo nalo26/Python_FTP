@@ -22,7 +22,7 @@ class CodeFTP(Enum):
 class CommandTCP(Enum):
     USER = "USER"
     PASS = "PASS"
-    DIR = "DIR"
+    LIST = "DIR"
     CWD = "CWD"
     RETR = "RETR"
     PASV = "PASV"

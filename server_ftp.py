@@ -129,7 +129,7 @@ class ServerFTP:
             else:
                 response = CodeFTP.FILE_NOT_AVAILABLE
 
-        elif data.startswith(CMD.DIR.value):
+        elif data.startswith(CMD.LIST.value):
             response = CodeFTP.OK
             response.message = " ".join(file_utils.dir(self.currentDir))
 
