@@ -82,7 +82,8 @@ class ServerFTP:
         while True:
             client_socket, client_address = self.serverTCP.accept()
             Thread(
-                target=self.handle_client, args=(client_socket, client_address)
+                target=self.handle_client,
+                args=(client_socket, client_address)
             ).start()
 
     def handle_client(self, client_socket: socket, client_address) -> None:
