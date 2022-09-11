@@ -1,0 +1,6 @@
+# Just write usernames of users granted read permissions on this directory and its files.
+# Similarly, children directories must also contain a __permissions__ file.
+
+anonymous
+toto
+titi
