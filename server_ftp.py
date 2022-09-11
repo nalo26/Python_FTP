@@ -103,127 +103,152 @@ class ServerFTP:
             return CodeFTP.COMMAND_NOT_IMPL
 
         if cmd == CommandTCP.HELP.cmd:
-            response = CodeFTP.OK
-            response.message += "\n"
-            response.message += "\n".join([tcp_c.help() for tcp_c in CommandTCP])
-            return response
+            self.handle_help()
 
         if cmd == CommandTCP.USER.cmd or cmd == CommandTCP.PASS.cmd:
-            if len(args) != 1:
-                return CodeFTP.SYNTAX_ERROR
-
-            if cmd == CommandTCP.USER.cmd:
-                user.username = args[0]
-
-            elif cmd.startswith(CommandTCP.PASS.cmd):
-                user.password = args[0]
-
-            login_state = self.login(user)
-
-            if login_state == self.LoginState.ACCEPTED:
-                return CodeFTP.LOGGED_IN
-
-            if login_state == self.LoginState.WRONG_CREDENTIAL:
-                return CodeFTP.WRONG_USERNAME_OR_PWD
-
-            return CodeFTP.USERNAME_OK_NEED_PWD
+            self.handle_user_and_password(cmd, args, user)
 
         if not user.is_authenticated:
             return CodeFTP.COMMAND_NOT_IMPL
 
         if cmd == CommandTCP.CWD.cmd:
-            if len(args) != 1:
-                return CodeFTP.SYNTAX_ERROR
+            self.handle_cwd(args, user)
 
-            path = args[0]
-            if "/" in path:
-                return CodeFTP.SYNTAX_ERROR
+        if cmd == CommandTCP.LIST.cmd:
+            self.handle_list()
 
-            is_valid_path = True
-            if path == "..":
-                self.currentDir.pop()
-            else:
-                pathToCheck, is_valid_path = file_utils.cwd(self.currentDir, path)
-                if file_utils.is_user_granted_permissions(pathToCheck, user.username):
-                    self.currentDir = pathToCheck
-                else :
-                    return CodeFTP.REQUEST_DENIED
+        if cmd == CommandTCP.PASV.cmd:
+            self.handle_pasv()
+            
+        if cmd == CommandTCP.PORT.cmd:
+            self.handle_port(args)
 
-            if is_valid_path:
-                response = CodeFTP.OK
-                response.message = file_utils.pwd(self.currentDir)
-            else:
-                response = CodeFTP.FILE_NOT_AVAILABLE
+        if cmd == CommandTCP.PWD.cmd:
+            self.handle_pwd()
 
-            return response
-
-        elif cmd == CommandTCP.LIST.cmd:
-            response = CodeFTP.OK
-            response.message = " ".join(file_utils.dir(self.currentDir))
-            return response
-
-        elif cmd == CommandTCP.PASV.cmd:
-            file_sender = ServerTCP(self.address, None)
-            Thread(
-                target=self.accept_client,
-                args=(file_sender,)
-            ).start()
-
-            port = file_sender.socket.getsockname()[1]
-
-            e = port // 256
-            f = port % 256
-
-            response = CodeFTP.ENTERING_PSV_MODE
-            response.message += f" ({self.address.replace('.', ',')},{e},{f})"
-            return response
-
-        elif cmd == CommandTCP.PORT.cmd:
-            args = args[0]
-
-            try:
-                ip, port = parse_ip(args)
-            except ValueError as error:
-                response = CodeFTP.SYNTAX_ERROR
-                response.message = str(error)
-                return response
-
-            file_sender = ClientTCP()
-            file_sender.connect(ip, port)
-
-            self.clients.append(FileChannel(ip, file_sender))
-
-            return CodeFTP.OK
-
-        elif cmd == CommandTCP.PWD.cmd:
-            response = CodeFTP.OK
-            response.message = file_utils.pwd(self.currentDir)
-            return response
-
-        elif cmd == CommandTCP.RETR.cmd:
-            if len(args) != 1:
-                return CodeFTP.SYNTAX_ERROR
-            try:
-                file_sender = [c for c in self.clients if c.client_ip == client_address[0]][0]
-            except IndexError:  # client not in list
-                return CodeFTP.NO_DATA_CONNECTION
-
-            file_name = args[0]
-            if file_utils.is_user_granted_permissions(self.currentDir, user.username):
-                file_content = file_utils.retr(self.currentDir, file_name)
-            else:
-                return CodeFTP.REQUEST_DENIED
-            if file_content is None:
-                return CodeFTP.FILE_NOT_AVAILABLE
-
-            file_sender.send(file_name.encode("utf-8"))
-            file_sender.send(file_content)
-
-            response = CodeFTP.OK
-            return response
+        if cmd == CommandTCP.RETR.cmd:
+            self.handle_retr(args, user, client_address)
 
         return CodeFTP.COMMAND_NOT_IMPL
 
     def accept_client(self, file_sender: ServerTCP) -> None:
         client_socket, client_address = file_sender.accept()
         self.clients.append(FileChannel(client_address[0], file_sender, client_socket))
+
+
+    def handle_help() -> CodeFTP:
+        response = CodeFTP.OK
+        response.message += "\n"
+        response.message += "\n".join([tcp_c.help() for tcp_c in CommandTCP])
+        return response
+
+    def handle_user_and_password(self, cmd: str, args: list[str], user: User)-> CodeFTP:
+        if len(args) != 1:
+                return CodeFTP.SYNTAX_ERROR
+
+        if cmd == CommandTCP.USER.cmd:
+            user.username = args[0]
+
+        elif cmd.startswith(CommandTCP.PASS.cmd):
+            user.password = args[0]
+
+        login_state = self.login(user)
+
+        if login_state == self.LoginState.ACCEPTED:
+            return CodeFTP.LOGGED_IN
+
+        if login_state == self.LoginState.WRONG_CREDENTIAL:
+            return CodeFTP.WRONG_USERNAME_OR_PWD
+
+        return CodeFTP.USERNAME_OK_NEED_PWD
+
+    def handle_cwd(self, args: list[str], user: User) -> CodeFTP:
+        if len(args) != 1:
+                return CodeFTP.SYNTAX_ERROR
+
+        path = args[0]
+        if "/" in path:
+            return CodeFTP.SYNTAX_ERROR
+
+        is_valid_path = True
+        if path == "..":
+            self.currentDir.pop()
+        else:
+            pathToCheck, is_valid_path = file_utils.cwd(self.currentDir, path)
+            if file_utils.is_user_granted_permissions(pathToCheck, user.username):
+                self.currentDir = pathToCheck
+            else :
+                return CodeFTP.REQUEST_DENIED
+
+        if is_valid_path:
+            response = CodeFTP.OK
+            response.message = file_utils.pwd(self.currentDir)
+        else:
+            response = CodeFTP.FILE_NOT_AVAILABLE
+
+        return response
+    
+    def handle_list(self) -> CodeFTP:
+        response = CodeFTP.OK
+        response.message = " ".join(file_utils.dir(self.currentDir))
+        return response
+
+    def handle_pasv(self) -> CodeFTP:
+        file_sender = ServerTCP(self.address, None)
+        Thread(
+            target=self.accept_client,
+            args=(file_sender,)
+        ).start()
+
+        port = file_sender.socket.getsockname()[1]
+
+        e = port // 256
+        f = port % 256
+
+        response = CodeFTP.ENTERING_PSV_MODE
+        response.message += f" ({self.address.replace('.', ',')},{e},{f})"
+        return response
+
+    def handle_port(self, args: list[str]) -> CodeFTP:
+        args = args[0]
+
+        try:
+            ip, port = parse_ip(args)
+        except ValueError as error:
+            response = CodeFTP.SYNTAX_ERROR
+            response.message = str(error)
+            return response
+
+        file_sender = ClientTCP()
+        file_sender.connect(ip, port)
+
+        self.clients.append(FileChannel(ip, file_sender))
+
+        return CodeFTP.OK
+
+    def handle_pwd(self) -> CodeFTP:
+        response = CodeFTP.OK
+        response.message = file_utils.pwd(self.currentDir)
+        return response
+
+    def handle_retr(self, args: list[str], user: User, client_address) -> CodeFTP:
+        if len(args) != 1:
+                return CodeFTP.SYNTAX_ERROR
+        try:
+            file_sender = [c for c in self.clients if c.client_ip == client_address[0]][0]
+        except IndexError:  # client not in list
+            return CodeFTP.NO_DATA_CONNECTION
+
+        file_name = args[0]
+        if file_utils.is_user_granted_permissions(self.currentDir, user.username):
+            file_content = file_utils.retr(self.currentDir, file_name)
+        else:
+            return CodeFTP.REQUEST_DENIED
+        if file_content is None:
+            return CodeFTP.FILE_NOT_AVAILABLE
+
+        file_sender.send(file_name.encode("utf-8"))
+        file_sender.send(file_content)
+
+        response = CodeFTP.OK
+        return response
