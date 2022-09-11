@@ -143,7 +143,11 @@ class ServerFTP:
             if path == "..":
                 self.currentDir.pop()
             else:
-                self.currentDir, is_valid_path = file_utils.cwd(self.currentDir, path)
+                pathToCheck, is_valid_path = file_utils.cwd(self.currentDir, path)
+                if file_utils.is_user_granted_permissions(pathToCheck, user.username):
+                    self.currentDir = pathToCheck
+                else :
+                    return CodeFTP.REQUEST_DENIED
 
             if is_valid_path:
                 response = CodeFTP.OK
@@ -205,8 +209,10 @@ class ServerFTP:
                 return CodeFTP.NO_DATA_CONNECTION
 
             file_name = args[0]
-            file_content = file_utils.retr(self.currentDir, file_name)
-
+            if file_utils.is_user_granted_permissions(self.currentDir, user.username):
+                file_content = file_utils.retr(self.currentDir, file_name)
+            else:
+                return CodeFTP.REQUEST_DENIED
             if file_content is None:
                 return CodeFTP.FILE_NOT_AVAILABLE
 
