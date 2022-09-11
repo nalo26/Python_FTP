@@ -6,14 +6,26 @@ class CommandTCP(Enum):
     HELP = (
         "HELP",
         "Returns usage documentation on a command if specified, else a general help document is returned",
-        "command"
+        "command",
     )
-    LIST = ("LIST", "Returns information of a file or directory if specified, "
-                    "else information of the current working directory is returned", None)
+    LIST = (
+        "LIST",
+        "Returns information of a file or directory if specified, "
+        "else information of the current working directory is returned",
+        None,
+    )
     PASS = ("PASS", "Authentication password", "password")
     PASV = ("PASV", "Enter passive mode", None)
-    PORT = ("PORT", "Specifies an address and port to which the server should connect", "a,b,c,d,e,f")
-    PWD = ("PWD", "Print working directory. Returns the current directory of the host", None)
+    PORT = (
+        "PORT",
+        "Specifies an address and port to which the server should connect",
+        "a,b,c,d,e,f",
+    )
+    PWD = (
+        "PWD",
+        "Print working directory. Returns the current directory of the host",
+        None,
+    )
     RETR = ("RETR", "Retrieve a copy of the file", "file")
     USER = ("USER", "Authentication username", "username")
 
